@@ -1,23 +1,23 @@
 {
     "version": 2,
-    "builds": [
-      {
-        "src": "server/index.ts",
-        "use": "@vercel/node",
-        "config": {
-          "includeFiles": ["dist/public/**"]
-        }
+    "buildCommand": "vite build",
+    "outputDirectory": "dist/public",
+    "functions": {
+      "server/index.ts": {
+        "runtime": "@vercel/node@3"
       }
-    ],
+    },
     "routes": [
       {
         "src": "/api/(.*)",
         "dest": "/server/index.ts"
       },
       {
+        "handle": "filesystem"
+      },
+      {
         "src": "/(.*)",
         "dest": "/server/index.ts"
       }
-    ],
-    "outputDirectory": "dist/public"
+    ]
   }
