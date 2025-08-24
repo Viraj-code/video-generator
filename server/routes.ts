@@ -6,93 +6,58 @@ import {
   videoStatusSchema,
   errorResponseSchema 
 } from "@shared/schema";
-import { GoogleGenAI, Modality } from "@google/genai";
 import { ZodError } from "zod";
 
-// Luma Dream Machine API integration
-async function generateVideoWithLuma(prompt: string, duration: number): Promise<{ taskId: string }> {
-  const lumaApiKey = process.env.LUMA_API_KEY || process.env.DREAM_MACHINE_API_KEY || "";
+// HeyGen API integration for avatar video generation
+async function generateVideoWithHeyGen(prompt: string, duration: number): Promise<{ taskId: string }> {
+  const heygenApiKey = process.env.HEYGEN_API_KEY || "";
   
-  if (!lumaApiKey) {
-    throw new Error("Luma API key not configured. Please set LUMA_API_KEY or DREAM_MACHINE_API_KEY environment variable.");
+  if (!heygenApiKey) {
+    throw new Error("HeyGen API key not configured. Please set HEYGEN_API_KEY environment variable.");
   }
 
-  const response = await fetch("https://api.lumalabs.ai/dream-machine/v1/generations", {
+  const payload = {
+    video_inputs: [
+      {
+        character: {
+          type: "avatar",
+          avatar_id: "Daisy-inskirt-20220818",
+          avatar_style: "normal"
+        },
+        voice: {
+          type: "text",
+          input_text: prompt,
+          voice_id: "2d5b0e6cf36f460aa7fc47e3eee4ba54"
+        },
+        background: {
+          type: "color",
+          value: "#667eea"
+        }
+      }
+    ],
+    dimension: {
+      width: 1280,
+      height: 720
+    },
+    caption: false
+  };
+
+  const response = await fetch("https://api.heygen.com/v2/video/generate", {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${lumaApiKey}`,
+      "X-Api-Key": heygenApiKey,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      prompt,
-      aspect_ratio: "16:9",
-      generation_type: "text_to_video"
-    }),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Luma API error: ${response.status} - ${errorText}`);
+    throw new Error(`HeyGen API error: ${response.status} - ${errorText}`);
   }
 
   const data = await response.json();
-  return { taskId: data.id };
-}
-
-// Gemini AI integration for image/video generation
-async function generateVideoWithGemini(prompt: string, duration: number): Promise<{ taskId: string; videoUrl?: string }> {
-  const geminiApiKey = process.env.GEMINI_API_KEY || "";
-  
-  if (!geminiApiKey) {
-    throw new Error("Gemini API key not configured. Please set GEMINI_API_KEY environment variable.");
-  }
-
-  const ai = new GoogleGenAI({ apiKey: geminiApiKey });
-  
-  try {
-    // For demonstration, we'll generate a high-quality image that represents the video concept
-    // In a production environment, you would use Veo 3 for actual video generation
-    const imagePrompt = `High-quality cinematic frame representing: ${prompt}. Professional photography, detailed, realistic, 4K quality, cinematic lighting`;
-    
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-preview-image-generation",
-      contents: [{ role: "user", parts: [{ text: imagePrompt }] }],
-      config: {
-        responseModalities: [Modality.TEXT, Modality.IMAGE],
-      },
-    });
-
-    const candidates = response.candidates;
-    if (!candidates || candidates.length === 0) {
-      throw new Error("No content generated");
-    }
-
-    const content = candidates[0].content;
-    if (!content || !content.parts) {
-      throw new Error("No content parts generated");
-    }
-
-    // For demo purposes, we'll simulate a video by returning the generated image
-    // In production, this would be actual video content
-    for (const part of content.parts) {
-      if (part.inlineData && part.inlineData.data) {
-        const imageData = Buffer.from(part.inlineData.data, "base64");
-        const timestamp = Date.now();
-        const filename = `generated-video-${timestamp}.jpg`;
-        
-        // Note: In a real implementation, this would be a video file
-        // For the demo, we're using a static image to represent the video concept
-        return { 
-          taskId: `gemini-${timestamp}`,
-          videoUrl: `data:image/jpeg;base64,${part.inlineData.data}`
-        };
-      }
-    }
-    
-    throw new Error("No image generated");
-  } catch (error) {
-    throw new Error(`Gemini generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
+  return { taskId: data.data.video_id };
 }
 
 // Demo video generation (for testing without API keys)
@@ -120,18 +85,18 @@ async function generateDemoVideo(prompt: string, duration: number): Promise<{ ta
   return { taskId, videoUrl };
 }
 
-async function checkLumaVideoStatus(taskId: string): Promise<any> {
-  const lumaApiKey = process.env.LUMA_API_KEY || process.env.DREAM_MACHINE_API_KEY || "";
+async function checkHeyGenVideoStatus(taskId: string): Promise<any> {
+  const heygenApiKey = process.env.HEYGEN_API_KEY || "";
   
-  const response = await fetch(`https://api.lumalabs.ai/dream-machine/v1/generations/${taskId}`, {
+  const response = await fetch(`https://api.heygen.com/v1/video_status.get?video_id=${taskId}`, {
     headers: {
-      "Authorization": `Bearer ${lumaApiKey}`,
+      "X-Api-Key": heygenApiKey,
     },
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Luma status check error: ${response.status} - ${errorText}`);
+    throw new Error(`HeyGen status check error: ${response.status} - ${errorText}`);
   }
 
   return await response.json();
@@ -150,30 +115,30 @@ async function pollVideoStatus(videoId: string, taskId: string, model: string) {
       let videoUrl;
       let thumbnailUrl;
       
-      if (model === "luma") {
-        const lumaStatus = await checkLumaVideoStatus(taskId);
+      if (model === "heygen") {
+        const heygenStatus = await checkHeyGenVideoStatus(taskId);
         
-        switch (lumaStatus.state) {
+        switch (heygenStatus.data?.status) {
           case "completed":
             status = "completed";
-            videoUrl = lumaStatus.assets?.video;
+            videoUrl = heygenStatus.data?.video_url;
+            thumbnailUrl = heygenStatus.data?.thumbnail_url;
             break;
           case "failed":
             status = "failed";
             await storage.updateVideoStatus(videoId, {
               status: "failed",
-              error: lumaStatus.failure_reason || "Video generation failed"
+              error: heygenStatus.data?.error || "Video generation failed"
             });
             return;
           case "processing":
-          case "queued":
+          case "pending":
           default:
             status = "processing";
             break;
         }
       } else {
-        // For Pika Labs or other models, implement respective API calls
-        throw new Error("Pika Labs integration not yet implemented");
+        throw new Error("Unsupported video generation model");
       }
 
       if (status === "completed" && videoUrl) {
@@ -246,23 +211,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         let result: { taskId: string; videoUrl?: string };
         
-        if (validatedData.model === "luma") {
-          // Try Luma first if API key is available
-          try {
-            const lumaResult = await generateVideoWithLuma(validatedData.prompt, parseInt(validatedData.duration));
-            result = { taskId: lumaResult.taskId };
-          } catch (error) {
-            // If Luma fails, fall back to Gemini
-            console.log("Luma unavailable, trying Gemini...");
-            result = await generateVideoWithGemini(validatedData.prompt, parseInt(validatedData.duration));
-          }
-        } else if (validatedData.model === "gemini") {
-          result = await generateVideoWithGemini(validatedData.prompt, parseInt(validatedData.duration));
+        if (validatedData.model === "heygen") {
+          const heygenResult = await generateVideoWithHeyGen(validatedData.prompt, parseInt(validatedData.duration));
+          result = { taskId: heygenResult.taskId };
         } else if (validatedData.model === "demo") {
           result = await generateDemoVideo(validatedData.prompt, parseInt(validatedData.duration));
         } else {
           // Default fallback to demo mode
-          console.log("No API available, using demo mode...");
+          console.log("Unknown model, using demo mode...");
           result = await generateDemoVideo(validatedData.prompt, parseInt(validatedData.duration));
         }
         
@@ -296,8 +252,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Video generation started"
         });
 
-        // Start background polling
-        pollVideoStatus(video.id, taskId, validatedData.model);
+        // Start background polling for HeyGen
+        if (validatedData.model === "heygen") {
+          pollVideoStatus(video.id, taskId, validatedData.model);
+        }
 
         res.json(video);
       } catch (apiError) {
@@ -376,15 +334,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Health check endpoint
   app.get("/api/health", (req, res) => {
-    const hasLumaKey = !!(process.env.LUMA_API_KEY || process.env.DREAM_MACHINE_API_KEY);
-    const hasGeminiKey = !!process.env.GEMINI_API_KEY;
+    const hasHeyGenKey = !!process.env.HEYGEN_API_KEY;
     
     res.json({
       status: "ok",
-      apiConnected: hasLumaKey || hasGeminiKey,
+      apiConnected: hasHeyGenKey,
       models: {
-        luma: hasLumaKey,
-        gemini: hasGeminiKey,
+        heygen: hasHeyGenKey,
         demo: true // Always available
       }
     });

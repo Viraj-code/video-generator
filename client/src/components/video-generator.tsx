@@ -36,7 +36,7 @@ export function VideoGenerator() {
   const { data: healthStatus } = useQuery<{
     status: string;
     apiConnected: boolean;
-    models: { luma: boolean; pika: boolean };
+    models: { heygen: boolean; demo: boolean };
   }>({
     queryKey: ["/api/health"],
     refetchInterval: 30000
@@ -155,7 +155,7 @@ export function VideoGenerator() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">AI Video Generator</h1>
-                <p className="text-sm text-gray-600">Powered by Gemini AI & Multiple Video APIs</p>
+                <p className="text-sm text-gray-600">Powered by HeyGen AI Avatar Technology</p>
               </div>
             </div>
             <div className="hidden md:flex items-center space-x-4">
@@ -241,8 +241,7 @@ export function VideoGenerator() {
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="demo">Demo Mode (No API needed)</SelectItem>
-                          <SelectItem value="gemini">Gemini AI (Image Demo)</SelectItem>
-                          <SelectItem value="luma">Luma Dream Machine</SelectItem>
+                          <SelectItem value="heygen">HeyGen AI Avatar Videos</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -361,9 +360,9 @@ export function VideoGenerator() {
               <h3 className="text-lg font-medium text-gray-900">Free Tier Information</h3>
               <div className="mt-2 space-y-2 text-sm text-gray-700">
                 <p><strong>Demo Mode:</strong> Instant generation with concept visualization - works without API keys</p>
-                <p><strong>Gemini AI:</strong> High-quality image generation representing your video concept</p>
-                <p><strong>Luma Dream Machine:</strong> Full video generation when API key is provided</p>
-                <p><strong>Processing Time:</strong> Demo/Gemini: Instant, Luma: 30-90 seconds</p>
+                <p><strong>HeyGen AI:</strong> Professional avatar videos with your text spoken by AI avatars (10 free credits)</p>
+                <p><strong>Video Quality:</strong> 1280x720 HD resolution with natural voice synthesis</p>
+                <p><strong>Processing Time:</strong> Demo: Instant, HeyGen: 30-60 seconds</p>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 <span className="px-3 py-1 bg-white/50 text-primary text-sm font-medium rounded-full">
