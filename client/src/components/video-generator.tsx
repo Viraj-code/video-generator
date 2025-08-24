@@ -90,6 +90,15 @@ export function VideoGenerator() {
           variant: "destructive",
         });
       }
+    },
+    onError: (error: any) => {
+      console.error("Status check failed:", error);
+      setIsPolling(false);
+      toast({
+        title: "Status Check Failed",
+        description: "Unable to check video status. Please refresh and try again.",
+        variant: "destructive",
+      });
     }
   });
 
