@@ -5,7 +5,7 @@
         "src": "package.json",
         "use": "@vercel/static-build",
         "config": {
-          "buildCommand": "vite build"
+          "buildCommand": "cd client && vite build"
         }
       },
       {
