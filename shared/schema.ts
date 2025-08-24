@@ -5,7 +5,7 @@ import { createInsertSchema } from "drizzle-zod";
 export const videoGenerationRequestSchema = z.object({
   prompt: z.string().min(10, "Prompt must be at least 10 characters").max(500, "Prompt must be less than 500 characters"),
   duration: z.enum(["5", "10"]).default("5"),
-  model: z.enum(["luma", "pika"]).default("luma"),
+  model: z.enum(["luma", "gemini", "demo"]).default("demo"),
 });
 
 // Video generation response schema

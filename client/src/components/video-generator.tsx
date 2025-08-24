@@ -28,18 +28,22 @@ export function VideoGenerator() {
     defaultValues: {
       prompt: "",
       duration: "5",
-      model: "luma"
+      model: "demo"
     }
   });
 
   // Health check query
-  const { data: healthStatus } = useQuery({
+  const { data: healthStatus } = useQuery<{
+    status: string;
+    apiConnected: boolean;
+    models: { luma: boolean; pika: boolean };
+  }>({
     queryKey: ["/api/health"],
     refetchInterval: 30000
   });
 
   // Video status query (only when polling)
-  const { data: videoStatus } = useQuery({
+  const { data: videoStatus } = useQuery<VideoStatus>({
     queryKey: ["/api/videos", currentVideo?.id, "status"],
     enabled: isPolling && !!currentVideo?.id,
     refetchInterval: false
@@ -142,7 +146,7 @@ export function VideoGenerator() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">AI Video Generator</h1>
-                <p className="text-sm text-gray-600">Powered by Pika Labs & Luma Dream Machine</p>
+                <p className="text-sm text-gray-600">Powered by Gemini AI & Multiple Video APIs</p>
               </div>
             </div>
             <div className="hidden md:flex items-center space-x-4">
@@ -227,8 +231,9 @@ export function VideoGenerator() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          <SelectItem value="demo">Demo Mode (No API needed)</SelectItem>
+                          <SelectItem value="gemini">Gemini AI (Image Demo)</SelectItem>
                           <SelectItem value="luma">Luma Dream Machine</SelectItem>
-                          <SelectItem value="pika">Pika Labs (Coming Soon)</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -346,9 +351,10 @@ export function VideoGenerator() {
             <div className="flex-1">
               <h3 className="text-lg font-medium text-gray-900">Free Tier Information</h3>
               <div className="mt-2 space-y-2 text-sm text-gray-700">
-                <p><strong>Luma Dream Machine:</strong> 30 free generations/month, 720p-1080p quality</p>
-                <p><strong>Pika Labs:</strong> Coming soon - Unlimited free generations, 5-10 second videos</p>
-                <p><strong>Processing Time:</strong> Typically 30-90 seconds depending on complexity</p>
+                <p><strong>Demo Mode:</strong> Instant generation with concept visualization - works without API keys</p>
+                <p><strong>Gemini AI:</strong> High-quality image generation representing your video concept</p>
+                <p><strong>Luma Dream Machine:</strong> Full video generation when API key is provided</p>
+                <p><strong>Processing Time:</strong> Demo/Gemini: Instant, Luma: 30-90 seconds</p>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 <span className="px-3 py-1 bg-white/50 text-primary text-sm font-medium rounded-full">
