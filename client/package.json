@@ -1,0 +1,10 @@
+{
+    "name": "video-generator-client",
+    "version": "1.0.0",
+    "scripts": {
+      "build": "vite build --outDir ../dist/public"
+    },
+    "devDependencies": {
+      "vite": "*"
+    }
+  }

@@ -1,23 +1,26 @@
 {
     "version": 2,
-    "buildCommand": "cd client && npx vite build --outDir ../dist/public",
-    "outputDirectory": "dist/public",
-    "functions": {
-      "server/index.ts": {
-        "runtime": "@vercel/node@20.x"
+    "builds": [
+      {
+        "src": "client/package.json",
+        "use": "@vercel/static-build",
+        "config": {
+          "buildCommand": "vite build --outDir ../dist/public"
+        }
+      },
+      {
+        "src": "server/index.ts",
+        "use": "@vercel/node"
       }
-    },
+    ],
     "routes": [
       {
         "src": "/api/(.*)",
         "dest": "/server/index.ts"
       },
       {
-        "handle": "filesystem"
-      },
-      {
         "src": "/(.*)",
-        "dest": "/server/index.ts"
+        "dest": "/dist/public/$1"
       }
     ]
   }
